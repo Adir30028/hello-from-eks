@@ -1,0 +1,10 @@
+image:
+  repository: 891612541377.dkr.ecr.us-east-1.amazonaws.com/flask-eks-app-repo
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+replicaCount: 1

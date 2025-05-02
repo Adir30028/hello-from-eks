@@ -1,6 +1,23 @@
+environments:
+  dev:
+    values:
+      - environments/dev.yaml
+      - values/dev.yaml
+  prod:
+    values:
+      - environments/prod.yaml
+      - values/prod.yaml
+
 releases:
   - name: flask-app
     namespace: default
     chart: ./flask-eks
+    version: 0.1.0
     values:
-      - ./flask-eks/values.yaml
+      - image:
+          repository: "{{ .Environment.Values.image.repository }}"
+          tag: "{{ .Environment.Values.image.tag }}"
+          pullPolicy: IfNotPresent
+        service:
+          type: "{{ .Environment.Values.service.type }}"
+          port: {{ .Environment.Values.service.port }}

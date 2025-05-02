@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 jobs:
   deploy:
@@ -25,22 +26,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Check AWS identity (debug)
+      - name: Determine environment
+        id: env
         run: |
-          echo "👤 AWS Identity:"
-          aws sts get-caller-identity
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "env=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "env=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Debug env
+        run: echo "🌍 Deploying to ${{ steps.env.outputs.env }}"
 
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY
 
-      - name: Build Docker image
+      - name: Build & Push Docker image
         run: |
           docker buildx create --use || true
           docker buildx build --platform linux/amd64 -t flask-eks-app --load ./app
-
-      - name: Tag & Push to ECR
-        run: |
           docker tag flask-eks-app:latest $ECR_REPOSITORY:latest
           docker push $ECR_REPOSITORY:latest
 
@@ -50,40 +55,21 @@ jobs:
           version: v1.29.0
 
       - name: Update kubeconfig
-        run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+        run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
-      - name: Debug kubeconfig and context
+      - name: Install helm & helmfile
         run: |
-          echo "📄 kubeconfig content:"
-          cat ~/.kube/config || echo "⚠️ No kubeconfig file found"
-
-          echo "🔍 Current context:"
-          kubectl config current-context || echo "⚠️ No context set"
-
-      - name: Validate cluster access
-        run: |
-          kubectl version || true
-          kubectl cluster-info || true
-          kubectl get nodes
-
-      - name: Install Helm & Helmfile
-        run: |
-          # Install Helm
           curl -LO https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
           tar -zxvf helm-v3.14.0-linux-amd64.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
-          # Install Helmfile (v1.0.0)
-          curl -LO https://github.com/helmfile/helmfile/releases/download/v1.0.0/helmfile_1.0.0_linux_amd64.tar.gz
-          tar -zxvf helmfile_1.0.0_linux_amd64.tar.gz
+          curl -L -o helmfile https://github.com/helmfile/helmfile/releases/download/v1.0.0/helmfile_1.0.0_linux_amd64.tar.gz
+          tar -xvzf helmfile_1.0.0_linux_amd64.tar.gz
           sudo mv helmfile /usr/local/bin/helmfile
-          helmfile --version
 
-          # Install helm-diff plugin
           helm plugin install https://github.com/databus23/helm-diff || true
 
-      - name: Deploy to EKS using Helmfile
+      - name: Deploy with Helmfile
         run: |
           cd helm
-          helmfile apply
+          helmfile -e ${{ steps.env.outputs.env }} apply
