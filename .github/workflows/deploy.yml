@@ -74,13 +74,14 @@ jobs:
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
           # Install Helmfile
-          HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | jq -r .tag_name)
-          curl -LO https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz
-          tar -xvzf helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz
-          sudo mv helmfile /usr/local/bin/helmfile
-          chmod +x /usr/local/bin/helmfile
+          curl -LO https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64
+          chmod +x helmfile_linux_amd64
+          sudo mv helmfile_linux_amd64 /usr/local/bin/helmfile
 
-          # Helm plugins
+          # Verify installation
+          helmfile --version
+
+          # Install Helm Diff plugin
           helm plugin install https://github.com/databus23/helm-diff || true
 
       - name: Deploy to EKS using Helmfile
