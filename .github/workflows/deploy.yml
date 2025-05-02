@@ -2,7 +2,8 @@ name: Deploy Flask to EKS
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
@@ -27,10 +28,13 @@ jobs:
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY
 
-      - name: Build & Push Docker image
+      - name: Build Docker image
         run: |
           docker buildx create --use || true
           docker buildx build --platform linux/amd64 -t flask-eks-app --load ./app
+
+      - name: Tag & Push to ECR
+        run: |
           docker tag flask-eks-app:latest $ECR_REPOSITORY:latest
           docker push $ECR_REPOSITORY:latest
 
@@ -42,31 +46,22 @@ jobs:
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name flask-eks-eks
-          export KUBECONFIG=$HOME/.kube/config
 
-      - name: Debug kubeconfig
+      - name: Install helm & helmfile
         run: |
-          echo "=== Kubeconfig Context ==="
-          kubectl config current-context
-          echo "=== Cluster Info ==="
-          kubectl cluster-info || true
+          curl -LO https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
+          tar -zxvf helm-v3.14.0-linux-amd64.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+
+          curl -LO https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64
+          chmod +x helmfile_linux_amd64
+          sudo mv helmfile_linux_amd64 /usr/local/bin/helmfile
+
+          helm plugin install https://github.com/databus23/helm-diff || true
 
       - name: Validate cluster access
         run: |
           kubectl get nodes
-
-      - name: Install helm & helmfile
-        run: |
-          curl -sSL -o helm.tar.gz https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
-          tar -zxvf helm.tar.gz
-          sudo mv linux-amd64/helm /usr/local/bin/helm
-
-          curl -sSL -o helmfile.tgz https://github.com/helmfile/helmfile/releases/download/v0.155.0/helmfile_0.155.0_linux_amd64.tar.gz
-          tar -zxvf helmfile.tgz
-          chmod +x helmfile
-          sudo mv helmfile /usr/local/bin/helmfile
-
-          helm plugin install https://github.com/databus23/helm-diff || true
 
       - name: Deploy to EKS using Helmfile
         run: |
