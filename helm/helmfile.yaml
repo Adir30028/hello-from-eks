@@ -1,0 +1,6 @@
+releases:
+  - name: flask-app
+    namespace: default
+    chart: ./flask-eks
+    values:
+      - ./flask-eks/values.yaml
