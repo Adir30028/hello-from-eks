@@ -2,12 +2,14 @@ name: Deploy Flask to EKS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  deploy:
+  dummy-test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Echo Hello
+        run: echo "🎉 Workflow Triggered!"
 
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -61,4 +63,3 @@ jobs:
         run: |
           cd helm
           helmfile apply
-
