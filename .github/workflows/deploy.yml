@@ -26,7 +26,7 @@ jobs:
 
       - name: Check AWS identity (debug)
         run: |
-          echo "🔐 Verifying caller identity..."
+          echo "👤 AWS Identity:"
           aws sts get-caller-identity
 
       - name: Login to Amazon ECR
