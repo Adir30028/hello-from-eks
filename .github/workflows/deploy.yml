@@ -26,7 +26,9 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Check AWS identity (debug)
-        run: aws sts get-caller-identity
+        run: |
+          echo "👤 AWS Identity:"
+          aws sts get-caller-identity
 
       - name: Login to Amazon ECR
         run: |
@@ -48,7 +50,8 @@ jobs:
           version: v1.29.0
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
       - name: Debug kubeconfig and context
         run: |
@@ -71,13 +74,14 @@ jobs:
 
       - name: Install Helmfile (binary)
         run: |
-          curl -L -o helmfile https://github.com/helmfile/helmfile/releases/download/v0.159.0/helmfile_0.159.0_linux_amd64
+          curl -L -o helmfile https://github.com/helmfile/helmfile/releases/download/v0.159.0/helmfile_linux_amd64
           chmod +x helmfile
           sudo mv helmfile /usr/local/bin/helmfile
           helmfile --version
 
       - name: Install helm-diff plugin
-        run: helm plugin install https://github.com/databus23/helm-diff || true
+        run: |
+          helm plugin install https://github.com/databus23/helm-diff || true
 
       - name: Deploy to EKS using Helmfile
         run: |
