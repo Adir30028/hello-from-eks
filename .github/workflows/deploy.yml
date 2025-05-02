@@ -29,14 +29,14 @@ jobs:
       - name: Determine environment
         id: env
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
             echo "env=prod" >> "$GITHUB_OUTPUT"
           else
             echo "env=dev" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Debug environment
-        run: echo "🌍 Deploying to environment: ${{ steps.env.outputs.env }}"
+      - name: Debug env
+        run: echo "🌍 Deploying to ${{ steps.env.outputs.env }}"
 
       - name: Login to Amazon ECR
         run: |
@@ -64,10 +64,11 @@ jobs:
           tar -zxvf helm-v3.14.0-linux-amd64.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
-          # Install Helmfile v1.0.0
+          # Install Helmfile (v1.0.0)
           curl -LO https://github.com/helmfile/helmfile/releases/download/v1.0.0/helmfile_1.0.0_linux_amd64.tar.gz
           tar -zxvf helmfile_1.0.0_linux_amd64.tar.gz
           sudo mv helmfile /usr/local/bin/helmfile
+          helmfile --version
 
           # Install helm-diff plugin
           helm plugin install https://github.com/databus23/helm-diff || true
