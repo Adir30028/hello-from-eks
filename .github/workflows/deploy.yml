@@ -66,7 +66,7 @@ jobs:
           kubectl cluster-info || true
           kubectl get nodes
 
-      - name: Install helm & helmfile
+      - name: Install Helm and Helmfile
         run: |
           # Install Helm
           curl -LO https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
@@ -74,14 +74,12 @@ jobs:
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
           # Install Helmfile
-          curl -LO https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64
-          chmod +x helmfile_linux_amd64
-          sudo mv helmfile_linux_amd64 /usr/local/bin/helmfile
+          HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | grep tag_name | cut -d '"' -f4)
+          curl -LO https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz
+          tar -zxvf helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz
+          sudo mv helmfile /usr/local/bin/helmfile
 
-          # Verify installation
-          helmfile --version
-
-          # Install Helm Diff plugin
+          # Install helm-diff plugin
           helm plugin install https://github.com/databus23/helm-diff || true
 
       - name: Deploy to EKS using Helmfile
