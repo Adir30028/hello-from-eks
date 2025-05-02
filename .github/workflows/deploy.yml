@@ -12,6 +12,7 @@ jobs:
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+      CLUSTER_NAME: flask-eks-eks
 
     steps:
       - name: Checkout code
@@ -25,9 +26,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Check AWS identity (debug)
-        run: |
-          echo "👤 AWS Identity:"
-          aws sts get-caller-identity
+        run: aws sts get-caller-identity
 
       - name: Login to Amazon ECR
         run: |
@@ -49,14 +48,12 @@ jobs:
           version: v1.29.0
 
       - name: Update kubeconfig
-        run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name flask-eks-eks
+        run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
       - name: Debug kubeconfig and context
         run: |
           echo "📄 kubeconfig content:"
           cat ~/.kube/config || echo "⚠️ No kubeconfig file found"
-
           echo "🔍 Current context:"
           kubectl config current-context || echo "⚠️ No context set"
 
@@ -66,21 +63,21 @@ jobs:
           kubectl cluster-info || true
           kubectl get nodes
 
-      - name: Install Helm and Helmfile
+      - name: Install Helm
         run: |
-          # Install Helm
           curl -LO https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
           tar -zxvf helm-v3.14.0-linux-amd64.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
-          # Install Helmfile
-          HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | grep tag_name | cut -d '"' -f4)
-          curl -LO https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz
-          tar -zxvf helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz
+      - name: Install Helmfile (binary)
+        run: |
+          curl -L -o helmfile https://github.com/helmfile/helmfile/releases/download/v0.159.0/helmfile_0.159.0_linux_amd64
+          chmod +x helmfile
           sudo mv helmfile /usr/local/bin/helmfile
+          helmfile --version
 
-          # Install helm-diff plugin
-          helm plugin install https://github.com/databus23/helm-diff || true
+      - name: Install helm-diff plugin
+        run: helm plugin install https://github.com/databus23/helm-diff || true
 
       - name: Deploy to EKS using Helmfile
         run: |
