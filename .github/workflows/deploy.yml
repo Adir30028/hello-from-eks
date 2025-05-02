@@ -27,13 +27,11 @@ jobs:
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY
 
-      - name: Build Docker image
+      - name: Build & Push Docker image
         run: |
-          docker buildx create --use
+          cd app
+          docker buildx create --use || true
           docker buildx build --platform linux/amd64 -t flask-eks-app --load .
-
-      - name: Tag & Push to ECR
-        run: |
           docker tag flask-eks-app:latest $ECR_REPOSITORY:latest
           docker push $ECR_REPOSITORY:latest
 
@@ -56,7 +54,7 @@ jobs:
           sudo mv helmfile_linux_amd64 /usr/local/bin/helmfile
           helm plugin install https://github.com/databus23/helm-diff || true
 
-      - name: Deploy to EKS
+      - name: Deploy to EKS using Helmfile
         run: |
           cd helm
           helmfile apply
