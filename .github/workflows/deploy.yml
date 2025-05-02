@@ -24,6 +24,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Check AWS identity (debug)
+        run: |
+          echo "🔐 Verifying caller identity..."
+          aws sts get-caller-identity
+
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY
@@ -47,20 +52,17 @@ jobs:
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name flask-eks-eks
 
-      - name: Debug AWS identity and kubeconfig
+      - name: Debug kubeconfig and context
         run: |
-          echo "==== AWS Identity ===="
-          aws sts get-caller-identity
+          echo "📄 kubeconfig content:"
+          cat ~/.kube/config || echo "⚠️ No kubeconfig file found"
 
-          echo "==== Kubeconfig File ===="
-          cat ~/.kube/config || echo "No kubeconfig found"
-
-          echo "==== Current Context ===="
-          kubectl config current-context || echo "No current context"
+          echo "🔍 Current context:"
+          kubectl config current-context || echo "⚠️ No context set"
 
       - name: Validate cluster access
         run: |
-          kubectl version --short || true
+          kubectl version || true
           kubectl cluster-info || true
           kubectl get nodes
 
