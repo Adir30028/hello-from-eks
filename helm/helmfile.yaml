@@ -29,5 +29,3 @@ releases:
     chart: grafana/grafana
     version: 7.3.10
     installed: true
-    values:
-      - adminPassword: "{{ requiredEnv `GRAFANA_ADMIN_PASSWORD` }}"
