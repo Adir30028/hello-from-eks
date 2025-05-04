@@ -3,10 +3,13 @@ environments:
     values:
       - environments/dev.yaml
       - values/dev.yaml
+      - grafana/values/dev.yaml
+
   prod:
     values:
       - environments/prod.yaml
       - values/prod.yaml
+      - grafana/values/prod.yaml
 
 ---
 releases:
@@ -14,3 +17,17 @@ releases:
     namespace: default
     chart: ./flask-eks
     version: 0.1.0
+
+  - name: prometheus
+    namespace: monitoring
+    chart: prometheus-community/kube-prometheus-stack
+    version: 56.6.2
+    installed: true
+
+  - name: grafana
+    namespace: monitoring
+    chart: grafana/grafana
+    version: 7.3.10
+    installed: true
+    values:
+      - adminPassword: "{{ requiredEnv `GRAFANA_ADMIN_PASSWORD` }}"

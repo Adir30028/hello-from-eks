@@ -35,8 +35,18 @@ jobs:
             echo "env=dev" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Debug env
-        run: echo "🌍 Deploying to ${{ steps.env.outputs.env }}"
+      - name: Set Grafana admin password (for requiredEnv)
+        run: |
+          if [[ "${{ steps.env.outputs.env }}" == "prod" ]]; then
+            echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD_PROD }}" >> $GITHUB_ENV
+          else
+            echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD_DEV }}" >> $GITHUB_ENV
+          fi
+
+      - name: Debug environment
+        run: |
+          echo "🌍 Environment: ${{ steps.env.outputs.env }}"
+          echo "🔒 Grafana password injected? ${{ env.GRAFANA_ADMIN_PASSWORD != '' }}"
 
       - name: Login to Amazon ECR
         run: |
@@ -59,19 +69,36 @@ jobs:
 
       - name: Install Helm & Helmfile
         run: |
-          # Install Helm
           curl -LO https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
           tar -zxvf helm-v3.14.0-linux-amd64.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
-          # Install Helmfile (v1.0.0)
           curl -LO https://github.com/helmfile/helmfile/releases/download/v1.0.0/helmfile_1.0.0_linux_amd64.tar.gz
           tar -zxvf helmfile_1.0.0_linux_amd64.tar.gz
           sudo mv helmfile /usr/local/bin/helmfile
           helmfile --version
 
-          # Install helm-diff plugin
           helm plugin install https://github.com/databus23/helm-diff || true
+
+      - name: Add Helm repos for monitoring
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
+      - name: Create Grafana admin secret in monitoring namespace
+        run: |
+          if [[ "${{ steps.env.outputs.env }}" == "prod" ]]; then
+            kubectl create secret generic grafana-admin-secret \
+              --from-literal=admin-user="${{ secrets.GRAFANA_ADMIN_USER_PROD }}" \
+              --from-literal=admin-password="${{ secrets.GRAFANA_ADMIN_PASSWORD_PROD }}" \
+              -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+          else
+            kubectl create secret generic grafana-admin-secret \
+              --from-literal=admin-user="${{ secrets.GRAFANA_ADMIN_USER_DEV }}" \
+              --from-literal=admin-password="${{ secrets.GRAFANA_ADMIN_PASSWORD_DEV }}" \
+              -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+          fi
 
       - name: Deploy with Helmfile
         run: |
