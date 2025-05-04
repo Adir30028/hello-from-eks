@@ -1,7 +1,7 @@
 from flask import Flask
 
 app = Flask(__name__)
-##workflow test2
+##workflow test
 @app.route('/')
 def home():
     return "Hello from Flask on EKS!"
