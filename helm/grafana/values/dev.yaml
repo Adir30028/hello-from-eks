@@ -1,9 +1,8 @@
-grafana:
-  admin:
-    existingSecret: grafana-admin-secret
-    userKey: admin-user
-    passwordKey: admin-password
+admin:
+  existingSecret: grafana-admin-secret
+  userKey: admin-user
+  passwordKey: admin-password
 
-  service:
-    type: LoadBalancer
-    port: 80
+service:
+  type: LoadBalancer
+  port: 80

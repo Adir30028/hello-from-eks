@@ -1,12 +1,11 @@
-grafana:
-  admin:
-    existingSecret: grafana-admin-secret
-    userKey: admin-user
-    passwordKey: admin-password
+admin:
+  existingSecret: grafana-admin-secret
+  userKey: admin-user
+  passwordKey: admin-password
 
-  service:
-    type: LoadBalancer
+service:
+  type: LoadBalancer
 
-  persistence:
-    enabled: true
-    size: 5Gi
+persistence:
+  enabled: true
+  size: 5Gi
