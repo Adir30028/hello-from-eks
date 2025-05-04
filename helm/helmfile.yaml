@@ -4,12 +4,14 @@ environments:
       - environments/dev.yaml
       - values/dev.yaml
       - grafana/values/dev.yaml
+      - prometheus/values/dev.yaml
 
   prod:
     values:
       - environments/prod.yaml
       - values/prod.yaml
       - grafana/values/prod.yaml
+      - prometheus/values/prod.yaml
 
 ---
 releases:
@@ -23,9 +25,13 @@ releases:
     chart: prometheus-community/kube-prometheus-stack
     version: 56.6.2
     installed: true
+    values:
+      - prometheus/values/{{ .Environment.Name }}.yaml
 
   - name: grafana
     namespace: monitoring
     chart: grafana/grafana
     version: 7.3.10
     installed: true
+    values:
+      - grafana/values/{{ .Environment.Name }}.yaml
